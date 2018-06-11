@@ -62,6 +62,9 @@ static NSString *const kURLKey = @"URL";
 //    if ([actionName hasPrefix:@"native"]) {
 //        return @(NO);
 //    }
+    if (![kCTMediatorHost isEqualToString:url.host]) {
+        return @(NO);
+    }
     
     // 这个demo针对URL的路由处理非常简单，就只是取对应的target名字和method名字，但这已经足以应对绝大部份需求。如果需要拓展，可以在这个方法调用之前加入完整的路由逻辑
     NSString *actionName = @"";
@@ -71,7 +74,7 @@ static NSString *const kURLKey = @"URL";
         targetName = separatedArr[1];
         actionName = [separatedArr lastObject];
     }
-    id result = [self performTarget:url.host action:actionName params:params shouldCacheTarget:NO];
+    id result = [self performTarget:targetName action:actionName params:params shouldCacheTarget:NO];
     if (completion) {
         if (result) {
             completion(@{@"result":result});
