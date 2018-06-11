@@ -9,6 +9,9 @@
 #import "CTMediator.h"
 #import <objc/runtime.h>
 
+static NSString *const kCTMediatorHost = @"toroke.banjoy.com";
+static NSString *const kURLKey = @"URL";
+
 @interface CTMediator ()
 
 @property (nonatomic, strong) NSMutableDictionary *cachedTarget;
@@ -29,7 +32,7 @@
 }
 
 /*
- scheme://[target]/[action]?[params]
+ scheme://toroke.banjoy.com/[target]/[action]?[params]
  
  url sample:
  aaa://targetA/actionB?id=1234
@@ -42,16 +45,32 @@
     for (NSString *param in [urlString componentsSeparatedByString:@"&"]) {
         NSArray *elts = [param componentsSeparatedByString:@"="];
         if([elts count] < 2) continue;
+        if ([kURLKey isEqualToString:[elts firstObject]]) {
+            NSRange range = [urlString rangeOfString:[NSString stringWithFormat:@"%@=", kURLKey]];
+            NSString *urlStr = [urlString substringFromIndex:range.location + range.length];
+            if (urlString.length > 0) {
+                [params setObject:urlStr forKey:[elts firstObject]];
+                continue;
+            }
+        }
         [params setObject:[elts lastObject] forKey:[elts firstObject]];
+        
     }
     
     // 这里这么写主要是出于安全考虑，防止黑客通过远程方式调用本地模块。这里的做法足以应对绝大多数场景，如果要求更加严苛，也可以做更加复杂的安全逻辑。
-    NSString *actionName = [url.path stringByReplacingOccurrencesOfString:@"/" withString:@""];
-    if ([actionName hasPrefix:@"native"]) {
-        return @(NO);
-    }
+//    NSString *actionName = [url.path stringByReplacingOccurrencesOfString:@"/" withString:@""];
+//    if ([actionName hasPrefix:@"native"]) {
+//        return @(NO);
+//    }
     
     // 这个demo针对URL的路由处理非常简单，就只是取对应的target名字和method名字，但这已经足以应对绝大部份需求。如果需要拓展，可以在这个方法调用之前加入完整的路由逻辑
+    NSString *actionName = @"";
+    NSArray *separatedArr = [url.path componentsSeparatedByString:@"/"];
+    NSString *targetName = @"";
+    if (separatedArr.count >= 2) {
+        targetName = separatedArr[1];
+        actionName = [separatedArr lastObject];
+    }
     id result = [self performTarget:url.host action:actionName params:params shouldCacheTarget:NO];
     if (completion) {
         if (result) {
